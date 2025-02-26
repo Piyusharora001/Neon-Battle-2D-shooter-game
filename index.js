@@ -1,4 +1,4 @@
-// Enhanced 2D Shooter Game with Responsive Design
+// Enhanced 2D Shooter Game with Responsive Design & Mobile Controls
 const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 document.body.appendChild(canvas);
@@ -50,6 +50,56 @@ function shoot() {
     player.bullets.push({ x: player.x + player.size / 2 - 2.5, y: player.y, speed: Math.min(canvas.width, canvas.height) * 0.01 });
 }
 
+// Mobile Controls
+const joystick = document.createElement("div");
+joystick.style.position = "fixed";
+joystick.style.bottom = "20px";
+joystick.style.left = "20px";
+joystick.style.width = "80px";
+joystick.style.height = "80px";
+joystick.style.background = "rgba(255, 255, 255, 0.5)";
+joystick.style.borderRadius = "50%";
+joystick.style.touchAction = "none";
+document.body.appendChild(joystick);
+
+const fireButton = document.createElement("button");
+fireButton.innerText = "FIRE";
+fireButton.style.position = "fixed";
+fireButton.style.bottom = "20px";
+fireButton.style.right = "20px";
+fireButton.style.padding = "15px 30px";
+fireButton.style.fontSize = "20px";
+fireButton.style.background = "red";
+fireButton.style.color = "white";
+fireButton.style.border = "none";
+fireButton.style.borderRadius = "10px";
+document.body.appendChild(fireButton);
+
+fireButton.addEventListener("click", () => {
+    if (!gameOver) shoot();
+});
+
+joystick.addEventListener("touchstart", (e) => movePlayer(e), false);
+joystick.addEventListener("touchmove", (e) => movePlayer(e), false);
+joystick.addEventListener("touchend", () => {
+    player.dx = 0;
+    player.dy = 0;
+}, false);
+
+function movePlayer(e) {
+    const touch = e.touches[0];
+    const rect = joystick.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = touch.clientX - centerX;
+    const dy = touch.clientY - centerY;
+    const magnitude = Math.sqrt(dx * dx + dy * dy);
+    if (magnitude > 10) {
+        player.dx = (dx / magnitude) * player.speed;
+        player.dy = (dy / magnitude) * player.speed;
+    }
+}
+
 // Spawn enemies
 function spawnEnemy() {
     if (!gameOver) {
@@ -62,25 +112,16 @@ spawnEnemy();
 // Update Game
 function update() {
     if (gameOver) return;
-
     player.x += player.dx;
     player.y += player.dy;
-
-    // Keep player in bounds
     player.x = Math.max(0, Math.min(canvas.width - player.size, player.x));
     player.y = Math.max(0, Math.min(canvas.height - player.size, player.y));
-    
-    // Move bullets
     player.bullets.forEach((bullet, index) => {
         bullet.y -= bullet.speed;
         if (bullet.y < 0) player.bullets.splice(index, 1);
     });
-    
-    // Move enemies & check collisions
     enemies.forEach((enemy, eIndex) => {
         enemy.y += enemySpeed;
-        
-        // Check player collision
         if (
             player.x < enemy.x + enemy.size &&
             player.x + player.size > enemy.x &&
@@ -89,12 +130,8 @@ function update() {
         ) {
             player.health--;
             enemies.splice(eIndex, 1);
-            if (player.health <= 0) {
-                gameOver = true;
-            }
+            if (player.health <= 0) gameOver = true;
         }
-        
-        // Check bullet collision
         player.bullets.forEach((bullet, bIndex) => {
             if (
                 bullet.x < enemy.x + enemy.size &&
@@ -113,30 +150,18 @@ function update() {
 // Draw Game
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Background
     ctx.fillStyle = "#252525";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw Player
     ctx.fillStyle = "#00bfff";
     ctx.fillRect(player.x, player.y, player.size, player.size);
-    
-    // Draw Bullets
     ctx.fillStyle = "#ff4500";
     player.bullets.forEach(bullet => ctx.fillRect(bullet.x, bullet.y, 5, 10));
-    
-    // Draw Enemies
     ctx.fillStyle = "#ff0000";
     enemies.forEach(enemy => ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size));
-    
-    // Draw Score & Health
     ctx.fillStyle = "white";
     ctx.font = "20px Arial";
     ctx.fillText(`Score: ${score}`, 10, 30);
     ctx.fillText(`Health: ${player.health}`, 10, 60);
-    
-    // Draw Game Over
     if (gameOver) {
         ctx.fillStyle = "yellow";
         ctx.font = "50px Arial";
